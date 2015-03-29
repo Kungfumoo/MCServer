@@ -38,6 +38,10 @@ AllFiles.lst
 .project
 *.cbp
 
+## CodeBlocks
+*.layout
+*.depend
+
 # world inside source
 ChunkWorx.ini
 groups.ini
