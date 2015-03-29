@@ -74,9 +74,8 @@ protected:
 } ;
 
 
-
-
-
+////////////////////////////////////////////////////////////////////////////////
+// cEnderman
 cEnderman::cEnderman(void) :
 	super("Enderman", mtEnderman, "mob.endermen.hit", "mob.endermen.death", 0.5, 2.9),
 	m_bIsScreaming(false),
@@ -114,7 +113,7 @@ void cEnderman::CheckEventSeePlayer()
 	{
 		return;
 	}
-	
+
 	ASSERT(Callback.GetPlayer() != nullptr);
 
 	if (!CheckLight())
@@ -145,7 +144,7 @@ void cEnderman::CheckEventLostPlayer(void)
 		EventLosePlayer();
 	}
 }
-	
+
 
 
 
@@ -195,9 +194,30 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	// Take damage when touching water, drowning damage seems to be most appropriate
 	if (IsSwimming())
 	{
-		EventLosePlayer();
-		TakeDamage(dtDrowning, nullptr, 1, 0);
-		// TODO teleport to a safe location
+        EventLosePlayer();
+        TakeDamage(dtDrowning, nullptr, 1, 1, 0);
+        TeleportRandomLocation();
 	}
+}
 
+
+bool cEnderman::TeleportRandomLocation()
+{
+    const Vector3d currPos = GetPosition();
+    int randomValue = 20;
+
+    //randomly generate coordinates, max 20 for difference?
+    int x = rand() % randomValue + (int)currPos.x;
+    int y = rand() % randomValue + (int)currPos.y;
+    int z = rand() % randomValue + (int)currPos.z;
+
+    //Check if location generated has enough free blocks to fit the endermen, if not, return false
+    //TODO
+
+    //TODO: Play warp sound
+
+    //Teleport endermen to location
+    TeleportToCoords((double)x, (double)y, (double)z);
+
+    return true;
 }

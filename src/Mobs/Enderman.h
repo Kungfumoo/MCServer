@@ -11,7 +11,7 @@ class cEnderman :
 	public cPassiveAggressiveMonster
 {
 	typedef cPassiveAggressiveMonster super;
-	
+
 public:
 	cEnderman(void);
 
@@ -36,6 +36,8 @@ private:
 	BLOCKTYPE CarriedBlock;
 	NIBBLETYPE CarriedMeta;
 
+	/** Returns true if the teleport was successfull */
+	bool TeleportRandomLocation();
 } ;
 
 
