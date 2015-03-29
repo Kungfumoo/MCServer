@@ -76,6 +76,8 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 // cEnderman
+const Byte cEnderman::TELEPORT_RANGE = 20;
+
 cEnderman::cEnderman(void) :
 	super("Enderman", mtEnderman, "mob.endermen.hit", "mob.endermen.death", 0.5, 2.9),
 	m_bIsScreaming(false),
@@ -119,7 +121,7 @@ void cEnderman::CheckEventSeePlayer()
 	if (!CheckLight())
 	{
 		// Insufficient light for enderman to become aggravated
-		// TODO: Teleport to a suitable location
+		TeleportRandomLocation();
 		return;
 	}
 
@@ -189,6 +191,13 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 {
 	super::Tick(a_Dt, a_Chunk);
 
+	//Day time, teleport away
+	if(!CheckLight())
+	{
+        TeleportRandomLocation();
+        return;
+	}
+
 	// TODO take damage in rain
 
 	// Take damage when touching water, drowning damage seems to be most appropriate
@@ -200,21 +209,39 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	}
 }
 
-
+//TODO: Add a teleport timer to reduce the number of teleports
 bool cEnderman::TeleportRandomLocation()
 {
     const Vector3d currPos = GetPosition();
-    int randomValue = 20;
+    int randomValue = (rand() % TELEPORT_RANGE*2 + 1) - TELEPORT_RANGE;
 
     //randomly generate coordinates, max 20 for difference?
-    int x = rand() % randomValue + (int)currPos.x;
-    int y = rand() % randomValue + (int)currPos.y;
-    int z = rand() % randomValue + (int)currPos.z;
+    int x = randomValue + (int)currPos.x;
+    int y = (randomValue/2) + (int)currPos.y;
+    int z = randomValue + (int)currPos.z;
 
-    //Check if location generated has enough free blocks to fit the endermen, if not, return false
-    //TODO
+    try
+    {
+        //Check if location generated has enough free blocks to fit the endermen, if not, return false
+        BLOCKTYPE blocks[] = {
+            m_World->GetBlock(x, y, z),
+            m_World->GetBlock(x, y+1, z),
+            m_World->GetBlock(x, y+2, z)
+        };
 
-    //TODO: Play warp sound
+        for(int i = 0; i < 3; i++)
+        {
+            if(blocks[i] != E_BLOCK_AIR)
+                return false;
+        }
+    }
+    catch(std::out_of_range& e)
+    {
+        return false;
+    }
+
+    //Play warp sound
+    m_World->BroadcastSoundEffect("mob.endermen.portal", currPos.x, currPos.y, currPos.z, 1.0f, 0.8f);
 
     //Teleport endermen to location
     TeleportToCoords((double)x, (double)y, (double)z);

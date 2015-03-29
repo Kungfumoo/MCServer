@@ -23,6 +23,8 @@ public:
 	virtual void EventLosePlayer(void) override;
 	virtual void Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 
+	static const Byte TELEPORT_RANGE;
+
 	bool IsScreaming(void) const {return m_bIsScreaming; }
 	BLOCKTYPE GetCarriedBlock(void) const {return CarriedBlock; }
 	NIBBLETYPE GetCarriedMeta(void) const {return CarriedMeta; }
