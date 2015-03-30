@@ -28,32 +28,32 @@ public:
 		{
 			return false;
 		}
-		
+
 		Vector3d Direction = m_EndermanPos - a_Player->GetPosition();
-		
+
 		// Don't check players who are more then SightDistance (64) blocks away
 		if (Direction.Length() > m_SightDistance)
 		{
 			return false;
 		}
-		
+
 		// Don't check if the player has a pumpkin on his head
 		if (a_Player->GetEquippedHelmet().m_ItemType == E_BLOCK_PUMPKIN)
 		{
 			return false;
 		}
 
-		
+
 		Vector3d LookVector = a_Player->GetLookVector();
 		double dot = Direction.Dot(LookVector);
-		
+
 		// 0.09 rad ~ 5 degrees
 		// If the player's crosshair is within 5 degrees of the enderman, it counts as looking
 		if (dot <= cos(0.09))
 		{
 			return false;
 		}
-		
+
 		cTracer LineOfSight(a_Player->GetWorld());
 		if (LineOfSight.Trace(m_EndermanPos, Direction, (int)Direction.Length()))
 		{
@@ -64,7 +64,7 @@ public:
 		m_Player = a_Player;
 		return true;
 	}
-	
+
 	cPlayer * GetPlayer(void) const { return m_Player; }
 
 protected:
@@ -76,11 +76,13 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 // cEnderman
-const Byte cEnderman::TELEPORT_RANGE = 20;
+const Byte cEnderman::TELEPORT_RANGE = 64;
+const Byte cEnderman::DAY_WARP_MAX_TICKS = 0;
 
 cEnderman::cEnderman(void) :
 	super("Enderman", mtEnderman, "mob.endermen.hit", "mob.endermen.death", 0.5, 2.9),
 	m_bIsScreaming(false),
+	m_dayWarpTicks(DAY_WARP_MAX_TICKS),
 	CarriedBlock(E_BLOCK_AIR),
 	CarriedMeta(0)
 {
@@ -194,8 +196,13 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	//Day time, teleport away
 	if(!CheckLight())
 	{
-        TeleportRandomLocation();
-        return;
+        if(m_dayWarpTicks == 0)
+        {
+            TeleportRandomLocation();
+            m_dayWarpTicks = DAY_WARP_MAX_TICKS;
+        }
+        else
+            m_dayWarpTicks--;
 	}
 
 	// TODO take damage in rain
@@ -213,15 +220,25 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 bool cEnderman::TeleportRandomLocation()
 {
     const Vector3d currPos = GetPosition();
-    int randomValue = (rand() % TELEPORT_RANGE*2 + 1) - TELEPORT_RANGE;
+    int randomValue = rand() % TELEPORT_RANGE + 1;
 
     //randomly generate coordinates, max 20 for difference?
-    int x = randomValue + (int)currPos.x;
-    int y = (randomValue/2) + (int)currPos.y;
-    int z = randomValue + (int)currPos.z;
+    int x = (randomValue - TELEPORT_RANGE) + (int)currPos.x;
+    int y = (int)currPos.y; //TODO: This is wrong.
+    int z = (randomValue - TELEPORT_RANGE) + (int)currPos.z;
 
-    try
+    int cX, cZ;
+
+    cChunkDef::BlockToChunk(x, z, cX, cZ);
+
+    if(y > 0 && m_World->IsChunkValid(cX, cZ))
     {
+        //Check if location has a solid block block below
+        BLOCKTYPE floor = m_World->GetBlock(x, y-1, z);
+
+        if(floor == E_BLOCK_AIR || floor == E_BLOCK_WATER || floor == E_BLOCK_LAVA)
+            return false;
+
         //Check if location generated has enough free blocks to fit the endermen, if not, return false
         BLOCKTYPE blocks[] = {
             m_World->GetBlock(x, y, z),
@@ -234,17 +251,15 @@ bool cEnderman::TeleportRandomLocation()
             if(blocks[i] != E_BLOCK_AIR)
                 return false;
         }
+
+        //Play warp sound
+        m_World->BroadcastSoundEffect("mob.endermen.portal", currPos.x, currPos.y, currPos.z, 1.0f, 0.8f);
+
+        //Teleport endermen to location
+        TeleportToCoords((double)x, (double)y, (double)z);
+
+        return true;
     }
-    catch(std::out_of_range& e)
-    {
-        return false;
-    }
 
-    //Play warp sound
-    m_World->BroadcastSoundEffect("mob.endermen.portal", currPos.x, currPos.y, currPos.z, 1.0f, 0.8f);
-
-    //Teleport endermen to location
-    TeleportToCoords((double)x, (double)y, (double)z);
-
-    return true;
+    return false;
 }
