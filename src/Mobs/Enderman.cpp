@@ -76,8 +76,8 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 // cEnderman
-const Byte cEnderman::TELEPORT_RANGE = 64;
-const Byte cEnderman::DAY_WARP_MAX_TICKS = 0;
+const Byte cEnderman::TELEPORT_RANGE = 32;
+const Byte cEnderman::DAY_WARP_MAX_TICKS = 10;
 
 cEnderman::cEnderman(void) :
 	super("Enderman", mtEnderman, "mob.endermen.hit", "mob.endermen.death", 0.5, 2.9),
@@ -220,11 +220,12 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 bool cEnderman::TeleportRandomLocation()
 {
     const Vector3d currPos = GetPosition();
-    int randomValue = rand() % TELEPORT_RANGE + 1;
+    int randomValue = rand() % (TELEPORT_RANGE*2) + 1;
+    int yRandom = rand() % 10 + 1;
 
-    //randomly generate coordinates, max 20 for difference?
+    //randomly generate coordinates
     int x = (randomValue - TELEPORT_RANGE) + (int)currPos.x;
-    int y = (int)currPos.y; //TODO: This is wrong.
+    int y = (yRandom - 5) + (int)currPos.y;
     int z = (randomValue - TELEPORT_RANGE) + (int)currPos.z;
 
     int cX, cZ;
