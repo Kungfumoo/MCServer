@@ -23,8 +23,9 @@ public:
 	virtual void EventLosePlayer(void) override;
 	virtual void Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 
-	static const Byte TELEPORT_RANGE;
-	static const Byte DAY_WARP_MAX_TICKS;
+	static const unsigned int XZ_TELEPORT_RANGE;
+	static const unsigned int Y_TELEPORT_RANGE;
+	static const unsigned int DAY_WARP_MAX_TICKS;
 
 	bool IsScreaming(void) const {return m_bIsScreaming; }
 	BLOCKTYPE GetCarriedBlock(void) const {return CarriedBlock; }
@@ -40,7 +41,7 @@ private:
 	BLOCKTYPE CarriedBlock;
 	NIBBLETYPE CarriedMeta;
 
-	/** Returns true if the teleport was successfull */
+	/** Teleports Endermen to a random location, Returns true if the teleport was successfull */
 	bool TeleportRandomLocation();
 } ;
 

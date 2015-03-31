@@ -76,8 +76,9 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 // cEnderman
-const Byte cEnderman::TELEPORT_RANGE = 32;
-const Byte cEnderman::DAY_WARP_MAX_TICKS = 10;
+const unsigned int cEnderman::XZ_TELEPORT_RANGE = 32;
+const unsigned int cEnderman::Y_TELEPORT_RANGE = 5;
+const unsigned int cEnderman::DAY_WARP_MAX_TICKS = 10;
 
 cEnderman::cEnderman(void) :
 	super("Enderman", mtEnderman, "mob.endermen.hit", "mob.endermen.death", 0.5, 2.9),
@@ -193,7 +194,7 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 {
 	super::Tick(a_Dt, a_Chunk);
 
-	//Day time, teleport away
+	// Day time, teleport away
 	if(!CheckLight())
 	{
         if(m_dayWarpTicks == 0)
@@ -202,7 +203,9 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
             m_dayWarpTicks = DAY_WARP_MAX_TICKS;
         }
         else
+        {
             m_dayWarpTicks--;
+        }
 	}
 
 	// TODO take damage in rain
@@ -216,17 +219,20 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	}
 }
 
-//TODO: Add a teleport timer to reduce the number of teleports
+
+
+
 bool cEnderman::TeleportRandomLocation()
 {
     const Vector3d currPos = GetPosition();
-    int randomValue = rand() % (TELEPORT_RANGE*2) + 1;
-    int yRandom = rand() % 10 + 1;
+    cFastRandom frand;
+    int randomValue = frand.NextInt(XZ_TELEPORT_RANGE*2);
+    int yRandom = frand.NextInt(Y_TELEPORT_RANGE*2);
 
-    //randomly generate coordinates
-    int x = (randomValue - TELEPORT_RANGE) + (int)currPos.x;
-    int y = (yRandom - 5) + (int)currPos.y;
-    int z = (randomValue - TELEPORT_RANGE) + (int)currPos.z;
+    // randomly generate coordinates of next location
+    int x = (randomValue - XZ_TELEPORT_RANGE) + (int)currPos.x;
+    int y = (yRandom - Y_TELEPORT_RANGE) + (int)currPos.y;
+    int z = (randomValue - XZ_TELEPORT_RANGE) + (int)currPos.z;
 
     int cX, cZ;
 
@@ -234,13 +240,15 @@ bool cEnderman::TeleportRandomLocation()
 
     if(y > 0 && m_World->IsChunkValid(cX, cZ))
     {
-        //Check if location has a solid block block below
+        // Check if location has a solid block below
         BLOCKTYPE floor = m_World->GetBlock(x, y-1, z);
 
         if(floor == E_BLOCK_AIR || floor == E_BLOCK_WATER || floor == E_BLOCK_LAVA)
+        {
             return false;
+        }
 
-        //Check if location generated has enough free blocks to fit the endermen, if not, return false
+        // Check if location generated has enough free blocks to fit the endermen, if not, return false
         BLOCKTYPE blocks[] = {
             m_World->GetBlock(x, y, z),
             m_World->GetBlock(x, y+1, z),
@@ -249,14 +257,16 @@ bool cEnderman::TeleportRandomLocation()
 
         for(int i = 0; i < 3; i++)
         {
-            if(blocks[i] != E_BLOCK_AIR)
+            if(blocks[i] != E_BLOCK_AIR || blocks[i] != E_BLOCK_WATER || blocks[i] != E_BLOCK_LAVA)
+            {
                 return false;
+            }
         }
 
-        //Play warp sound
+        // Play warp sound
         m_World->BroadcastSoundEffect("mob.endermen.portal", currPos.x, currPos.y, currPos.z, 1.0f, 0.8f);
 
-        //Teleport endermen to location
+        // Teleport endermen to location
         TeleportToCoords((double)x, (double)y, (double)z);
 
         return true;
